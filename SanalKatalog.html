@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profesyonel Katalog</title>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden !important; background: #2c3e50; font-family: 'Segoe UI', sans-serif; color: white; }
+        .app-layout { display: flex; flex-direction: column; width: 100vw; height: 100vh; align-items: center; justify-content: center; gap: 20px; }
+        .viewer { display: flex; gap: 30px; align-items: center; justify-content: center; height: 75vh; width: 95vw; }
+        
+        .sidebar { width: 220px; height: 100%; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; transition: all 0.4s ease; }
+        .sidebar.hidden { width: 0; padding: 0; opacity: 0; border: none; }
+        
+        /* ALTTAN YAPRAK GÖRÜNME SORUNU İÇİN ÇÖZÜM */
+        .stf__wrapper .stf__block { background: transparent !important; }
+
+        .thumb-wrap { width: calc(50% - 5px); cursor: pointer; }
+        .thumb-wrap.full { width: 100%; }
+        .thumb-wrap img { width: 100%; border: 2px solid transparent; border-radius: 3px; display: block; }
+        .thumb-wrap:hover img { border-color: #3498db; }
+
+        #book { width: 800px; height: 566px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.4s; }
+        #book.zoomed { transform: scale(1.4); transform-origin: center; z-index: 999; }
+        
+        .page { background: #fff; overflow: hidden; border: 1px solid #ccc; }
+        .page img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+
+        /* SİLDİK: .stf__block::after (Yapay orta gölge artık yok) */
+
+        .bottom-bar { display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 30px; z-index: 1000; }
+        .controls { display: flex; gap: 8px; }
+        button { padding: 8px 15px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 15px; font-weight: bold; }
+        input { width: 50px; padding: 5px; border-radius: 5px; border: none; text-align: center; color: black; }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout" id="mainWrapper">
+        <div class="viewer">
+            <div class="sidebar hidden" id="sidebar"></div>
+            <div id="book"></div>
+        </div>
+
+        <div class="bottom-bar">
+            <button onclick="toggleSidebar()">▤ Sayfalar</button>
+            <button onclick="toggleFullScreen()">⛶ Tam Ekran</button>
+            <button onclick="zoomBook()">🔍 Zoom</button>
+            <div class="controls">
+                <button id="firstBtn">⏮</button>
+                <button id="prevBtn">◀</button>
+                <input type="number" id="pageInput" min="1" max="20" value="1">
+                <button id="nextBtn">▶</button>
+                <button id="lastBtn">⏭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const book = document.getElementById('book');
+            const sidebar = document.getElementById('sidebar');
+            const input = document.getElementById('pageInput');
+            const mainWrapper = document.getElementById('mainWrapper');
+            const total = 20;
+
+            for (let i = 1; i <= total; i++) {
+                const p = document.createElement('div'); 
+                p.className = 'page'; 
+                // data-density="soft" kütüphanenin kendi gölge ve bükülme efektini otomatik aktif eder
+                p.setAttribute('data-density', 'soft'); 
+                p.innerHTML = `<img src="${i}.jpg" />`; 
+                book.appendChild(p);
+
+                const t = document.createElement('div');
+                t.className = (i === 1 || i === total) ? 'thumb-wrap full' : 'thumb-wrap';
+                t.innerHTML = `<img src="${i}.jpg" />`;
+                t.onclick = () => pageFlip.flip(i - 1);
+                sidebar.appendChild(t);
+            }
+
+            const pageFlip = new St.PageFlip(book, { width: 400, height: 566, size: "fixed", showCover: true, usePortrait: false });
+            pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+
+            document.getElementById('prevBtn').onclick = () => pageFlip.flipPrev();
+            document.getElementById('nextBtn').onclick = () => pageFlip.flipNext();
+            document.getElementById('firstBtn').onclick = () => pageFlip.flip(0);
+            document.getElementById('lastBtn').onclick = () => pageFlip.flip(total - 1);
+            
+            pageFlip.on('flip', (e) => input.value = e.data + 1);
+            input.onchange = (e) => pageFlip.flip(parseInt(e.target.value) - 1);
+            
+            window.toggleSidebar = () => sidebar.classList.toggle('hidden');
+            window.toggleFullScreen = () => !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen();
+            window.zoomBook = () => book.classList.toggle('zoomed');
+
+            mainWrapper.addEventListener('click', (e) => {
+                if (book.classList.contains('zoomed') && !book.contains(e.target) && !e.target.closest('button') && e.target.tagName !== 'INPUT' && !sidebar.contains(e.target)) {
+                    book.classList.remove('zoomed');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
